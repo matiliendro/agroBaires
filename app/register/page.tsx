@@ -90,7 +90,6 @@ export default function Register() {
                   <SelectValue placeholder="Selecciona un tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
                   <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="comprador">Comprador</SelectItem>
                   <SelectItem value="vendedor_comprador">Vendedor y Comprador</SelectItem>

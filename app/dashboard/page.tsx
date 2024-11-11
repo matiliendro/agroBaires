@@ -1,18 +1,25 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ProductList from '@/components/ProductList';
 import ProductFormModal from '@/components/ProductFormModal';
+import SearchInput from '@/components/SearchInput';
 import { Product } from '@/types/product';
 
-const getUserType = () => {
-  return localStorage.getItem('userType') || 'comprador';
-};
+// Datos de ejemplo más extensos para mejor testing
+const mockProductsData: Product[] = [
+  { id: '1', name: 'Manzanas Rojas', category: 'Frutas', price: 100, producer: 'Productor A' },
+  { id: '2', name: 'Manzanas Verdes', category: 'Frutas', price: 90, producer: 'Productor A' },
+  { id: '3', name: 'Mandarinas', category: 'Frutas', price: 85, producer: 'Productor B' },
+  { id: '4', name: 'Zanahorias', category: 'Verduras', price: 50, producer: 'Productor B' },
+  { id: '5', name: 'Naranjas', category: 'Frutas', price: 80, producer: 'Productor C' },
+  { id: '6', name: 'Mangos', category: 'Frutas', price: 120, producer: 'Usuario Actual' },
+  { id: '7', name: 'Melones', category: 'Frutas', price: 150, producer: 'Usuario Actual' },
+];
 
 export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,15 +27,13 @@ export default function Dashboard() {
   const [category, setCategory] = useState('all');
   const [userType, setUserType] = useState('');
   const [location, setLocation] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setUserType(getUserType());
-    const mockProducts: Product[] = [
-      { id: '1', name: 'Manzanas', category: 'Frutas', price: 100, producer: 'Productor A' },
-      { id: '2', name: 'Zanahorias', category: 'Verduras', price: 50, producer: 'Productor B' },
-      { id: '3', name: 'Naranjas', category: 'Frutas', price: 80, producer: 'Productor C' },
-    ];
-    setProducts(mockProducts);
+    setIsClient(true);
+    const storedUserType = localStorage.getItem('userType') || 'comprador';
+    setUserType(storedUserType);
+    setProducts(mockProductsData);
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,88 +63,110 @@ export default function Dashboard() {
     setProducts(products.filter(product => product.id !== id));
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (category === 'all' || product.category === category)
+  // Usando useMemo para optimizar el filtrado de productos
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = category === 'all' || product.category === category;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchTerm, category]);
+
+  const myProducts = useMemo(() => {
+    return products.filter(product => product.producer === 'Usuario Actual');
+  }, [products]);
+
+  if (!isClient) {
+    return null;
+  }
+
+  const SearchSection = () => (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle>Buscar Productos</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Ubicación</label>
+          <SearchInput
+            placeholder="Ingresa tu ubicación"
+            value={location}
+            onChange={handleLocationChange}
+            className="w-full"
+            autoComplete="street-address"
+          />
+        </div>
+        <div className="flex space-x-2">
+          <SearchInput
+            placeholder="¿Qué estás buscando?"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="flex-grow"
+            autoComplete="off"
+          />
+          <Select onValueChange={setCategory} value={category}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              <SelectItem value="Frutas">Frutas</SelectItem>
+              <SelectItem value="Verduras">Verduras</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button>Buscar</Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 
-  const BuyerContent = () => (
+  const SellerContent = () => (
     <>
       <Card className="mb-4">
         <CardHeader>
-          <CardTitle>Buscar Productos</CardTitle>
+          <CardTitle>Mis Productos en Venta</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Ubicación</label>
-            <Input
-              placeholder="Ingresa tu ubicación"
-              value={location}
-              onChange={handleLocationChange}
-              className="w-full"
-            />
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium">Productos Publicados</h3>
+            <ProductFormModal onSubmit={handleAddProduct} />
           </div>
-          <div className="flex space-x-2">
-            <Input
-              placeholder="¿Qué estás buscando?"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="flex-grow"
-            />
-            <Select onValueChange={setCategory} value={category}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las categorías</SelectItem>
-                <SelectItem value="Frutas">Frutas</SelectItem>
-                <SelectItem value="Verduras">Verduras</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button>Buscar</Button>
+          <div className="grid gap-4">
+            {myProducts.map((product) => (
+              <div key={product.id} className="flex justify-between items-center p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">{product.name}</h4>
+                  <p className="text-sm text-gray-500">Precio: ${product.price}</p>
+                </div>
+                <div className="space-x-2">
+                  <ProductFormModal 
+                    isEdit 
+                    product={product} 
+                    onSubmit={(data) => handleEditProduct(product.id, data)} 
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => handleDeleteProduct(product.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
+      <SearchSection />
       <ProductList products={filteredProducts} />
     </>
   );
 
-  const SellerContent = () => (
-    <Card className="mb-4">
-      <CardHeader>
-        <CardTitle>Mis Productos en Venta</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">Productos Publicados</h3>
-          <ProductFormModal onSubmit={handleAddProduct} />
-        </div>
-        <div className="grid gap-4">
-          {products.map((product) => (
-            <div key={product.id} className="flex justify-between items-center p-4 border rounded-lg">
-              <div>
-                <h4 className="font-medium">{product.name}</h4>
-                <p className="text-sm text-gray-500">Precio: ${product.price}</p>
-              </div>
-              <div className="space-x-2">
-                <ProductFormModal 
-                  isEdit 
-                  product={product} 
-                  onSubmit={(data) => handleEditProduct(product.id, data)} 
-                />
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => handleDeleteProduct(product.id)}
-                >
-                  Eliminar
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+  const BuyerContent = () => (
+    <>
+      <SearchSection />
+      <ProductList products={filteredProducts} />
+    </>
   );
 
   const AdminContent = () => (
@@ -148,8 +175,36 @@ export default function Dashboard() {
         <CardTitle>Administración de Productos</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button className="mr-2">Agregar Producto</Button>
-        <Button variant="outline">Gestionar Usuarios</Button>
+      <Button className="mr-2">Administrador Producto</Button>
+        <Button  className="mr-2">Gestionar Usuarios</Button>
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium">Gestionar Productos</h3>
+            <ProductFormModal onSubmit={handleAddProduct} />
+          </div>
+          <div className="grid gap-4">
+            {myProducts.map((product) => (
+              <div key={product.id} className="flex justify-between items-center p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">{product.name}</h4>
+                  <p className="text-sm text-gray-500">Precio: ${product.price}</p>
+                </div>
+                <div className="space-x-2">
+                  <ProductFormModal 
+                    isEdit 
+                    product={product} 
+                    onSubmit={(data) => handleEditProduct(product.id, data)} 
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => handleDeleteProduct(product.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
       </CardContent>
     </Card>
   );

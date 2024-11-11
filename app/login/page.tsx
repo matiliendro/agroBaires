@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Mock de la API de inicio de sesión
 const mockLoginAPI = async (credentials: { email: string; password: string }) => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   const users = [
@@ -38,7 +37,7 @@ export default function Login() {
     try {
       const result = await mockLoginAPI({ email, password });
       if (result.success) {
-        alert(`Inicio de sesión exitoso. Bienvenido, ${result.userType}!`);
+        localStorage.setItem('userType', result.userType);
         router.push('/dashboard');
       }
     } catch (error) {
