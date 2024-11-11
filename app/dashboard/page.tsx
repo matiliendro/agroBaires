@@ -175,7 +175,7 @@ export default function Dashboard() {
         <CardTitle>Administración de Productos</CardTitle>
       </CardHeader>
       <CardContent>
-      <Button className="mr-2">Administrador Producto</Button>
+      <Button className="mr-2">Agregar Producto</Button>
         <Button  className="mr-2">Gestionar Usuarios</Button>
         <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">Gestionar Productos</h3>
