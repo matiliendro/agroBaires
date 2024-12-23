@@ -6,7 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import LocationMap from './LocationMap';
+import dynamic from 'next/dynamic';
+
+const LocationMap = dynamic(
+  () => import('./LocationMap'),
+  { ssr: false }
+);
 
 interface ProductFormModalProps {
   isEdit?: boolean;
@@ -20,8 +25,22 @@ interface ProductFormModalProps {
       lat: number;
       lng: number;
     };
+    image?: string;
+    producer?: string;
+    phone?: string;
+    email?: string;
+    description?: string;
   };
   onSubmit: (data: any) => void;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  type: "vendedor" | "comprador" | "admin";
+  active: boolean;
+  password: string;  // Asegúrate de que esto se guarde al registrar
 }
 
 export default function ProductFormModal({ isEdit = false, product, onSubmit }: ProductFormModalProps) {
@@ -30,7 +49,13 @@ export default function ProductFormModal({ isEdit = false, product, onSubmit }: 
     category: product?.category || '',
     price: product?.price || '',
     location: product?.location || '',
-    coordinates: product?.coordinates || null,
+    coordinates: product?.coordinates || { lat: -12.046374, lng: -77.042793 },
+    image: product?.image || '',
+    imageFile: null as File | null,
+    producer: product?.producer || '',
+    phone: product?.phone || '',
+    email: product?.email || '',
+    description: product?.description || '',
   });
 
   const handleLocationSelect = (lat: number, lng: number) => {
@@ -38,6 +63,27 @@ export default function ProductFormModal({ isEdit = false, product, onSubmit }: 
       ...prev,
       coordinates: { lat, lng },
     }));
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const base64 = await convertToBase64(file);
+      setFormData(prev => ({
+        ...prev,
+        imageFile: file,
+        image: base64 as string
+      }));
+    }
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,11 +98,11 @@ export default function ProductFormModal({ isEdit = false, product, onSubmit }: 
           {isEdit ? "Editar" : "Publicar Nuevo Producto"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar Producto" : "Publicar Nuevo Producto"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pb-4">
           <div className="space-y-2">
             <Label htmlFor="location">Ubicación de Recogida</Label>
             <Input
@@ -68,8 +114,11 @@ export default function ProductFormModal({ isEdit = false, product, onSubmit }: 
             <div className="mt-2">
               <Label>Selecciona la ubicación en el mapa</Label>
               <LocationMap 
-                onLocationSelect={handleLocationSelect}
-                initialLocation={formData.coordinates ? [formData.coordinates.lat, formData.coordinates.lng] : undefined}
+                onLocationSelect={(location: [number, number]) => {
+                  const [lat, lng] = location;
+                  handleLocationSelect(lat, lng);
+                }}
+                location={formData.coordinates ? [formData.coordinates.lat, formData.coordinates.lng] : undefined}
               />
             </div>
           </div>
@@ -107,6 +156,67 @@ export default function ProductFormModal({ isEdit = false, product, onSubmit }: 
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="image">Imagen del Producto</Label>
+            <Input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+            {formData.image && (
+              <div className="mt-2">
+                <img 
+                  src={formData.image} 
+                  alt="Vista previa" 
+                  className="max-w-[200px] rounded-md"
+                />
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="producer">Nombre del Productor</Label>
+            <Input
+              id="producer"
+              placeholder="Nombre del productor"
+              value={formData.producer}
+              onChange={(e) => setFormData({ ...formData, producer: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Teléfono de Contacto</Label>
+            <Input
+              id="phone"
+              placeholder="Ej: +54 11 2345-6789"
+              value={formData.phone}
+              maxLength={15}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Correo Electrónico</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="ejemplo@correo.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <textarea
+              id="description"
+              className="w-full min-h-[100px] px-3 py-2 rounded-md border border-input"
+              placeholder="Describe tu producto (máximo 500 caracteres)"
+              maxLength={500}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+            <div className="text-sm text-gray-500">
+              {formData.description.length}/500 caracteres
+            </div>
           </div>
           <Button type="submit" className="w-full">
             {isEdit ? "Guardar Cambios" : "Publicar"}

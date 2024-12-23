@@ -4,4 +4,9 @@ export interface Product {
   category: string;
   price: number;
   producer: string;
-}
+  image: string;
+  phone: string;
+  email: string;
+  location: string;
+  description: string;
+} 

@@ -7,22 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-// Mock de la API de registro
-const mockRegisterAPI = async (userData: any) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  if (userData.email && userData.password) {
-    return { success: true, message: 'Registro exitoso', userType: userData.userType };
-  } else {
-    throw new Error('Error en el registro');
-  }
-};
+import { addUser, loginUser, User } from '@/utils/storage';
 
 export default function Register() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState('');
+  const [formData, setFormData] = useState<Omit<User, 'id'>>({
+    name: '',
+    email: '',
+    password: '',
+    userType: 'comprador'
+  });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -31,13 +24,11 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const result = await mockRegisterAPI({ name, email, password, userType });
-      if (result.success) {
-        alert("Registro exitoso. Tu cuenta ha sido creada correctamente.");
-        router.push('/dashboard');
-      }
+      const newUser = addUser(formData);
+      loginUser(formData.email, formData.password);
+      router.push('/dashboard');
     } catch (error) {
-      alert("Error en el registro. Hubo un problema al crear tu cuenta. Por favor, intenta de nuevo.");
+      alert("Error en el registro. Por favor, intenta nuevamente.");
     } finally {
       setIsLoading(false);
     }
@@ -45,9 +36,9 @@ export default function Register() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-green-100 to-green-200">
-      <Card className="w-[350px]">
+      <Card className="w-[400px]">
         <CardHeader>
-          <CardTitle>Registrarse</CardTitle>
+          <CardTitle>Registro</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,10 +46,8 @@ export default function Register() {
               <Label htmlFor="name">Nombre</Label>
               <Input
                 id="name"
-                type="text"
-                placeholder="Tu nombre"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
             </div>
@@ -67,9 +56,8 @@ export default function Register() {
               <Input
                 id="email"
                 type="email"
-                placeholder="correo@ejemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
               />
             </div>
@@ -78,20 +66,23 @@ export default function Register() {
               <Input
                 id="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="userType">Tipo de usuario</Label>
-              <Select onValueChange={setUserType} value={userType}>
+              <Label htmlFor="userType">Tipo de Usuario</Label>
+              <Select
+                value={formData.userType}
+                onValueChange={(value) => setFormData({ ...formData, userType: value })}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un tipo" />
+                  <SelectValue placeholder="Selecciona tu tipo de usuario" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="comprador">Comprador</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="vendedor_comprador">Vendedor y Comprador</SelectItem>
                 </SelectContent>
               </Select>

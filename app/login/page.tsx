@@ -1,28 +1,12 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-const mockLoginAPI = async (credentials: { email: string; password: string }) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  const users = [
-    { email: 'admin@example.com', password: 'admin123', userType: 'admin' },
-    { email: 'vendedor@example.com', password: 'vendedor123', userType: 'vendedor' },
-    { email: 'comprador@example.com', password: 'comprador123', userType: 'comprador' },
-    { email: 'ambos@example.com', password: 'ambos123', userType: 'vendedor_comprador' },
-  ];
-
-  const user = users.find(u => u.email === credentials.email && u.password === credentials.password);
-  if (user) {
-    return { success: true, userType: user.userType };
-  } else {
-    throw new Error('Credenciales inválidas');
-  }
-};
+import { loginUser, initializeUsers } from '@/utils/storage';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -30,15 +14,21 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Inicializar usuarios mock si no existen
+  useEffect(() => {
+    initializeUsers();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const result = await mockLoginAPI({ email, password });
-      if (result.success) {
-        localStorage.setItem('userType', result.userType);
+      const user = loginUser(email, password);
+      if (user) {
         router.push('/dashboard');
+      } else {
+        throw new Error('Credenciales inválidas');
       }
     } catch (error) {
       alert("Error en el inicio de sesión. Por favor, verifica tus credenciales.");
@@ -76,9 +66,19 @@ export default function Login() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </Button>
+            <div className="space-y-2">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => router.push('/register')}
+              >
+                Registrarse
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

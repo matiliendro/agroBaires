@@ -1,7 +1,6 @@
 "use client"
 
-import { Input } from '@/components/ui/input';
-import { useRef } from 'react';
+import { forwardRef } from 'react';
 
 interface SearchInputProps {
   value: string;
@@ -12,25 +11,22 @@ interface SearchInputProps {
   className?: string;
 }
 
-export default function SearchInput({
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  autoComplete = "on",
-  className = ""
-}: SearchInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>((props, ref) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    props.onChange(e);
+  };
 
   return (
-    <Input
-      ref={inputRef}
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      autoComplete={autoComplete}
-      className={className}
+    <input 
+      {...props}
+      ref={ref}
+      type="text"
+      onChange={handleChange}
+      className={`w-full px-3 py-2 border rounded-md ${props.className}`}
     />
   );
-}
+});
+
+SearchInput.displayName = 'SearchInput';
+
+export default SearchInput;

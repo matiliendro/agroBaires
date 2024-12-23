@@ -10,13 +10,34 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const userType = localStorage.getItem('userType');
-    setIsLoggedIn(!!userType);
+    const checkLoginStatus = () => {
+      const userType = typeof window !== 'undefined' ? localStorage.getItem('userType') : null;
+      console.log('Estado de login:', !!userType);
+      setIsLoggedIn(!!userType);
+    };
+
+    checkLoginStatus();
+
+    window.addEventListener('focus', checkLoginStatus);
+    window.addEventListener('storage', checkLoginStatus);
+
+    return () => {
+      window.removeEventListener('focus', checkLoginStatus);
+      window.removeEventListener('storage', checkLoginStatus);
+    };
   }, []);
 
   const handleLogout = () => {
+    const currentProducts = localStorage.getItem('products');
+    
     localStorage.removeItem('userType');
+    localStorage.removeItem('currentUser');
     setIsLoggedIn(false);
+    
+    if (currentProducts) {
+      localStorage.setItem('products', currentProducts);
+    }
+    
     router.push('/login');
   };
 
@@ -33,15 +54,6 @@ export default function Navbar() {
                 Búsqueda
               </Button>
             </Link>
-            {isLoggedIn && (
-              <Button 
-                variant="outline" 
-                className="text-white hover:text-green-800 hover:bg-white"
-                onClick={handleLogout}
-              >
-                Cerrar Sesión
-              </Button>
-            )}
           </div>
         </div>
       </div>
